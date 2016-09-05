@@ -310,5 +310,105 @@ swoole_server(serv_host,serv_port,serv_mode,sock_type)
              zend_call_method_with_1_params(port_object, swoole_server_port_class_entry_ptr, null,"set",retval,zsetting)
 
            }
+           //至此这个before start 任务完成
+         }
+
+         //src/network/server.c::502
+         //swServer从这个地方正式启动
+         //又是一个很长的接口
+         swServer_start(serv){
+          //获取server的factory, 这个家伙其实不是工厂模式
+          //factory是manager进程，worker，taskWorker进程的总入口， 这些进程均在factory中fork
+          *factory = &serv->factory
+
+          //server 启动前的各种检查
+          swServer_start_check(serv){
+            //check onReceive, onPacket,have_tcp_sock是否符合规则
+            //!udp
+            serv->onPacket = serv->onReceive
+
+            if serv->factory_mod == SW_MODE_PROCESS {
+              //close notify
+              if serv->dispatch_mod == SW_DISPATCH_ROUND/QUEUE
+                serv->onConnect 和 serv->onClose = NULL
+                serv->disable_notify=1
+            }
+
+            //onTask是用户主动把一些长耗时的请求分给taskWorker执行时的接口
+            //onFinish为taskWorker执行完用户指派的任务后的回调接口
+            if swooleG.task_worker_num{
+              serv->onTask/onFinish 存在性检查
+            }
+
+            check serv->reactor_num/worker_num/max_sockets/max_connection 的合法性
+            swooleG->session_round=1
+          }
+
+          //init message QUEUE
+          //ftok convert a pathname and a project identifier to a System V IPC key
+          serv->message_queue_key = ftok(path_ptr, 1);
+
+          //TODO
+          init log
+
+          if serv->demonize{
+            redirect stdout to log file
+            redirect stdout stderr to /dev/null
+          }
+
+          //set master pid
+          swooleGS->master_pid=getpid()
+          swooleGS->start=1
+          swooleGS->now = swooleGS->start_time = time(NULL)
+
+          //设置send回调函数
+          if udp{
+            //TODO
+            serv->send = swServer_send2
+          }else{
+            //TODO
+            serv->send = swServer_send1
+          }
+
+          //alloc memory for workers
+          serv->workers = swooleG.memory_pool->alloc(worker_num)
+
+          //设置swooleGS 的 event_workers
+          swooleGS->event_workers.workers = serv->workers
+          swooleGS->event_workers.worker_num = serv->worker_num
+          swooleGS->event_workers.use_msgqueue = 0
+
+          //循环设置每个worker的pool
+          for(){
+            swooleGS->event_workers.workers[i].pool = &swooleGS->event_workers
+          }
+
+          //循环设置reactor thread的 buffer input
+          for(){
+            serv->reactor_threads[i].buffer_input = new swRingBuffer_new()
+          }
+
+          //循环设置task_worker的notify pipe 和result TODO
+
+          //TODO user_worker 不知道干嘛的
+
+          //循环设置serv->listen_list中ls的options
+          for(listen_list as ls){
+            //TODO
+            swPort_set_option(ls);
+          }
+
+          //factory start
+          //又是一个很复杂的函数，进去看看
+          //用来创建worker和task worker
+          //swServer_create中曾调用swFactoryProcess_create对factory的各种回调接口设置过
+          //factory->start = swFactoryProcess_start
+          //src/factory/FactoryProcess.c::68
+          factory->start(factory){
+
+
+          }
+
+          //至此SW_SERVER_CB_onStart 结束  
          }
     }
