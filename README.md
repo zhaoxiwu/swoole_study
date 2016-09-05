@@ -69,7 +69,7 @@ demo:
     $serv = new swoole_server("127.0.0.1", 9501);
 
     // attach handler for connect event, once client connected to server the registered handler will be executed
-    $serv->on('connect', function ($serv, $fd){ 
+    $serv->on('connect', function ($serv, $fd){
         echo "Client:Connect.\n";
     });
 
@@ -87,7 +87,7 @@ demo:
     $serv->start();
 
 
-
+--------------------------------------------------------------------------------
 PHP用户空间：
     swoole_websock::swoole_http_server::swoole_server,
 
@@ -242,8 +242,73 @@ swoole_server(serv_host,serv_port,serv_mode,sock_type)
          serv->onReseive = php_swoole_onReceive
          serv->ptr2 = zobject（zobject意思是zval object，serv是swServer。其实是swoole_server类的实例）
 
-         //下面是一个很长的接口~
+         //下面是一个很长的接口， 从名字可以看出是启动之前的一系列前置操作
+         //整体逻辑为：设置serv和factory的关联关系，根据factory_mod的值创建不同的worker
+         //初始化serv的reactor_threads,connection_list, 设置factory的各种回调接口
+         //给server增加一个setting属性，用来存储配置相关的属性，如果worker_num等，并调用set接口
+         //serv->set(array)是提供给用户来设置server属性的操作接口
+         //swoole_server.c::322
          php_swoole_server_before_start(serv, zobject){
+           swServer_create(serv){
+             swooleG.factory = &serv->factory
+             serv->factory.ptr = serv
+             初始化serv->session_list
+             if serv->factory_mod == SW_MODE_SINGLE{
+               //进程模式启动，此时reactor和worker为同一个进程
+               swReactorProcess_create(serv)
+             }
+             else{
 
+               //当swoole以server模式运行时，reactor都是多线程启动，同时拥有多个worker，和taskWorker
+               //src/network/ReactorThread.c:918
+               swReactorThread_create(serv){
+                 根据serv->reactor_num申请对应大小的内存
+                 serv->reactor_threads = swooleG.memory_pool.alloc(memory_pool,serv->reactor_num*sizeof(swReactorThread))
+                 //serv->factory_mod == SW_MODE_PROCESS时使用共享内存，
+                 初始化serv->connection_list = sw_calloc/shm_calloc()
+                 //接下来创建worker进程
+                 SW_MODE_THREAD模式废弃
+                 if serv->factory_mod == SW_MODE_PROCESS{
+                   //src/factory/FactoryProcess.c::30
+                   //第二个参数work_num 没有用到
+                   swFactoryProcess_create(&serv->factory, serv->worker_num){
+                     init swFactoryProcess *object
+                     //set callbacks
+                     factory->object = object
+                     factory->dispatch = swFactoryProcess_dispatch
+                     factory->finish = swFactoryProcess_finish
+                     factory->start = swFactoryProcess_start
+                     factory->notify = swFactoryProcess_notify
+                     factory->Shutdown = swFactoryProcess_shutdown
+                     factory->end = swFactoryPrcess_end
+                   }
+                 }
+                 //默认情况下使用,
+                 swFactory_create(&(serv->factory)){
+                   同swFactoryProcess_create, 只是没有设置factory的object
+                 }
+               }
+             }
+           }
+           //if use coroutien, 暂时先不看，后续补充 TODO
+           coro_init()
+
+           //设置swoole_server的属性master_pid的值
+           zend_update_property_long(swoole_server_port_class_entry_ptr,zobject,"master_pid",getpid())
+
+           init swoole_server属性setting，
+           //给zsetting中增加属性和值, setting是一个zend_array,
+           //属性值包括：worker_num, task_worker_num, pipe_buffer_size,buffer_output_size,max_connection
+           //以worker_num为例
+           add_assoc_long(zsetting, "worker_num", serv->worker_num)
+
+           //循环调用 用户自定义set函数
+           for（i=1;i<server_port_list.num;i++）{
+             port_object = server_port_list.zobjects[i]
+             //获取上面设置好的 setting
+             port_setting = zend_read_property(class,object,"setting",1)
+             zend_call_method_with_1_params(port_object, swoole_server_port_class_entry_ptr, null,"set",retval,zsetting)
+
+           }
          }
     }
