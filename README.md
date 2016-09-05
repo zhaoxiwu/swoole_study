@@ -30,7 +30,7 @@ swooleWG:  Worker级别的全局变量
         //-------------------------------END--------------------------------
     };
 
-#define PHP_SERVER_CALLBACK_NUM             (SW_SERVER_CB_onMessage+1)
+    #define PHP_SERVER_CALLBACK_NUM             (SW_SERVER_CB_onMessage+1)
 
 MINIT:
 初始化过程, 顾名思义都是做一些基本的对象初始化，内存分配的。服务启动操作都在用户php层面操作
