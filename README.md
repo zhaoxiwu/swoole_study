@@ -1,7 +1,10 @@
 # swoole_study
 全局变量：
-    swooleG: 全局变量，进程之间不共享，可写
+
+swooleG: 全局变量，进程之间不共享，可写
+
 swooleGS：全局变量，进程之间共享，不可写
+
 swooleWG:  Worker级别的全局变量
 
     enum php_swoole_server_callback_type
