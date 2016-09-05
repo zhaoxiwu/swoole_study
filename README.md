@@ -86,16 +86,18 @@ demo:
 
 
 PHP用户空间：
-swoole_websock::swoole_http_server::swoole_server,
+    swoole_websock::swoole_http_server::swoole_server,
 
-swoole_server(string  $host, integer  $port, integer  $mode = SWOOLE_PROCESS, integer  $sock_type = SWOOLE_SOCK_TCP)
+    swoole_server(string  $host, integer  $port, integer  $mode = SWOOLE_PROCESS, integer  $sock_type = SWOOLE_SOCK_TCP)
 
 
-integer $mode SWOOLE_BASE, SWOOLE_THREAD, SWOOLE_PROCESS, SWOOLE_PACKET
+    integer $mode SWOOLE_BASE, SWOOLE_THREAD, SWOOLE_PROCESS, SWOOLE_PACKET
 
-integer $sock_type  SWOOLE_SOCK_TCP, SWOOLE_SOCK_TCP6, SWOOLE_SOCK_UDP, SWOOLE_SOCK_UDP6, SWOOLE_SOCK_UNIX_DGRAM, SWOOLE_SOCK_UNIX_STREAM, If you want use ssl just or (|) your current socket type with SWOOLE_SSL
+    integer $sock_type  SWOOLE_SOCK_TCP, SWOOLE_SOCK_TCP6, SWOOLE_SOCK_UDP, SWOOLE_SOCK_UDP6, SWOOLE_SOCK_UNIX_DGRAM, SWOOLE_SOCK_UNIX_STREAM, If you want use ssl just or (|) your current socket type with SWOOLE_SSL
 
-    swoole_server(serv_host,serv_port,serv_mode,sock_type)
+
+swoole_server(serv_host,serv_port,serv_mode,sock_type)
+
     创建过程：
     1、启动方式检查，只支持cli
     2、重复创建检查，只允许有一个server
