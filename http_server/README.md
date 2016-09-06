@@ -18,6 +18,7 @@ HttpServer demo
     $serv->start();
 
 swoole_http_server(host, port)
+
     //其实看代码，没有显示定义swoole_http_server的构造函数，它继承了swoole_server类，该类构造
     //函数可以通过制定sock type类支持不同协议类型的服务
     //在MINIT中会调用swoole_http_server_init(module_number), 该接口实现如下：
@@ -42,6 +43,7 @@ swoole_http_server(host, port)
     }
 
 response->cookie()
+
     //swoole_http_server.c:1958
     PHP_METHOD(swoole_http_response,cookie){
 
