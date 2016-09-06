@@ -405,7 +405,179 @@ swoole_server(serv_host,serv_port,serv_mode,sock_type)
           //factory->start = swFactoryProcess_start
           //src/factory/FactoryProcess.c::68
           factory->start(factory){
+            //获取swServer
+            serv = factory->ptr
 
+            //循环创建worker
+            for(i;i < serv->worker_num;i++){
+              //该接口通过i的大下判断worker类型，它可以获得woker，taskWorker,user_worker
+              //if i < serv->worker_num then return worker
+              //if i > serv->worker_num and i < serv->worker_num+swooleG.task_worker_num
+              //then return task worker
+              //if i > worker_num + task_worker_num and i < worker_num + task_worker_num + serv->user_worker_num
+              //then return user worker
+              worker = swServer_get_worker(serv,i){
+                return swooleGS->event_workers.workers[i]
+                or return swooleGS->task_wokers.worker[i - worker_num]
+                //猜测user worker是用户通过swooole_process主动创建的worker
+                or return serv->user_workers[i - worker_num - task_worker_num]
+              }
+              swWorker_create(worker){
+                //分配内存
+                //创建锁,并初始化lock
+              }
+
+              //不知道干嘛的 TODO
+              serv->reactor_pipe_num = worker_num/reactor_num
+
+              //启动manager进程, 并创建子进程worker和task worker
+              swManager_start(factory){
+                swFactoryProcess *object = factory->object
+                swServer *serv = factory->ptr
+
+                //init pipes
+                object->pipes = sw_calloc(worker_num)
+
+                //循环为每个worker分配pipe
+                for(i;worker_num;i){
+                  serv->workers[i].pipe_master=object->pipes[i].master
+                  serv->workers[i].pipe_worker=object->pipes[i].worker
+                  serv->workers[i].pipe_object=object->pipes[i]
+
+                  swserver_store_pipe_fd(serv, serv->workers[i].pipe_object){
+                    serv->connection_list[pipe_object.worker].object = pipe_object
+                    serv->connection_list[master_fd] = pipe_object
+                  }
+
+                  //设置taskWorker, taskworker有个进程池，每次ontask时从池子中选取一个空闲
+                  //的task worker来执行耗时任务
+                  //task_workers 和 task_worker_num为什么不存在一个全局结构里面？TODO
+                  swProcessPool_create(swooleGS->task_workers, swooleG->task_worker_num,
+                    swooleG.task_max_request,key, crate_pipe){
+                      //函数原型：
+                      //int swProcessPool_create(swProcessPool *pool, int worker_num, int max_request, key_t msgqueue_key, int create_pipe)
+                      //终于在一起了....
+                      pool->worker_num = worker_num
+                      pool->max_request = max_request
+                      if msgqueue_key > 0 {
+                        pool->use_msgqueue = 1
+                        pool->msgqueue_key = msgqueue_key
+                      }
+
+                      给pool->workers 分配内存
+                      //初始化map
+                      pool->map = swHashMap_new
+                      pool->queue 分配内存
+
+                      if use_msgqueue{
+                        //系统调用，创建以key为关键字的msgqueue
+                        msgget(msg_key， OPC_CREATE|O_EXCL|0666)
+                      }
+                      else if create_pipe{
+                        pool->pipes 分配内存
+                        //循环创建pipes
+                        for(i;worker_num;i++){
+                          *pipe = &pool->pipes[i]
+                          //系统调用
+                          socketpair()
+                          //设置pipe的read,write,getFd,close回调
+                          read=swPipeUnsock_read
+                          write=swPipeUnsock_write
+                          getFd=swPipeUnsock_getFd
+                          close=swPipeUnsock_close
+                        }
+                      }
+                      //最后设置pool的主循环 TODO
+                      //static int swProcessPool_worker_loop(swProcessPool *pool, swWorker *worker)
+                      //基本逻辑是从不断从msgqueue或pipe中获取接收到的数据，然后调用pool->onTask(pool, data)
+                      //任务分配给task worker
+                      pool->main_loop=swProcessPool_loop
+                    }
+                    //循环创建taskworker
+                    for(i;i<task_worker_num;i++){
+                      worker = pool->workers[i]
+                      //具体操作参考上面的创建worker过程，不累述
+                      swWorker_create(worker)
+                    }
+                }
+
+                //create user worker
+                serv->user_workers 分配内存
+                //循环创建user worker对象，同样是调用swWorker_create
+                server->user_workers[i] = user_worker
+
+                //重头戏来了，fork()
+                pid = fork()
+                if 父进程 {
+                  //设置manger id，fork后父进程能获取子进程id
+                  swooleGS->manager_id = pid
+                }
+
+                if 子进程 {
+                  sleep 1s，wait parent process Finish
+                  //初始化操作，关闭所有的listenport
+                  swServer_close_listen_port(serv)
+
+                  //create task worker process
+                  swProcessPool_start(swooleGS->task_workers){
+                    for(i;i<pool->worker_num;i++){
+                      pool->workers[i].pool=pool
+                      pool->workers[i].id=pool->start_id+i
+                      pool->workers[i].type=pool->type
+
+                      //真正的创建task worker进程，该接口调用fork
+                      swProcessPool_spawn(pool->workers[i]){
+                        pid = fork()
+                        pool = worker.pool
+
+                        //主进程则做一些清理工作，然后注册上新的进程
+                        if master process{
+                          //如果该进程pid已经存在，则删除
+                          if worker->pid{
+                            swHashMap_del_int(pool->map, worker->pid)
+                          }
+                          //设置worker的pid字段
+                          worker->deleted=o
+                          worker->pid=pid
+                          //注册到hash map
+                          swHashMap_add_int(pool->map, pid, worker)
+                        }
+
+                        //重头戏还是子进程，也就是task worker进程
+                        //以下几个回调接口都在上面注册过，lineno:494 226, TODO
+                        //具体执行逻辑详见各自接口描述
+                        pool->onWorkerStart(pool, worker->id)
+                        pool->main_loop(pool, worker)
+                        pool->onWorkerStop(pool, worker->id)
+                      }  
+                    }
+
+                  //create worker
+                  for(i;worker_num;i++){
+                    pid = swManager_spawn_worker(factory,i){
+                      pid = fork()
+                      if parent process{
+                        return pid
+                      }
+
+                      if child process
+                        //worker 的主循环，接受数据，处理请求等。略复杂 TODO
+                        swWorker_loop(factory,i){
+
+                        }
+                      }
+                    }
+                    serv->workers[i].pid=pid
+                  }
+                  //create user worker
+                  }
+                }
+              //factory start 结束
+              }
+
+              //设置factory的Finish回调
+              factory->Finish = swFactory_finish
+            }
 
           }
 
