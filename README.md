@@ -1,4 +1,8 @@
 # swoole_study
+代码分析路线按官方文档demo脉络进行
+http_server, tcp_server, websocket_server, tcp_client, async_io, task
+
+
 全局变量：
 
 swooleG: 全局变量，进程之间不共享，可写
@@ -64,5 +68,3 @@ MINIT:
         swoole_module_init(module_number TSRMLS_CC);
     };
 
-代码分析路线按官方文档demo来按照不同场景设置
-httpserver, tcpserver, websocketserver, TCP Client, async io, task
