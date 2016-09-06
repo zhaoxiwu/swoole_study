@@ -84,7 +84,7 @@ swoole_server(serv_host,serv_port,serv_mode,sock_type)
          }
      7、swoole_objests[this.handle]=serv, server_port_list[this.handle]=port
 
-    swoole_server.c:1746
+ swoole_server.c:1746, on()
     swoole->on(name, callback){
          server启动后不允许注册cb
          //cb check, 改接口为zend提供，如果cb为可执行，则func_name为接口名称
@@ -121,7 +121,7 @@ swoole_server(serv_host,serv_port,serv_mode,sock_type)
          }
     }
 
-    swoole_server_port.c:317
+swoole_server_port.c:317
     swoole_server_port->on（name, cb）{
          server运行中不允许调用
          //检查cb的可执行性
@@ -141,7 +141,7 @@ swoole_server(serv_host,serv_port,serv_mode,sock_type)
           swooleG.serv->onClose = php_swoole_onClose
     }
 
-    swoole_server.c::1332
+swoole_server.c::1332
     php_swoole_onConnect/onClose(sw server 8serv, swDataHead *info){
          //设置调用参数, 其中fd为reactor与work交互的文件描述符，from_id为reactor id
          args[0]=&serv->ptr2, arg[1]=info.fd, arg[2]=info.from_id
@@ -154,7 +154,7 @@ swoole_server(serv_host,serv_port,serv_mode,sock_type)
          call_user_function_ex(EG(function_table), NULL, callback, retval,3,args,0,null)
     }
 
-    swoole_server.c:1931
+swoole_server.c:1931
     swoole_sever->start(){
          运行状态检查
          swServer *serv = swoole_objects[this.handle]
