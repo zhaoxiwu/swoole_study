@@ -560,16 +560,48 @@ swoole_server(serv_host,serv_port,serv_mode,sock_type)
                         return pid
                       }
 
-                      if child process
-                        //worker 的主循环，接受数据，处理请求等。略复杂 TODO
-                        swWorker_loop(factory,i){
-
-                        }
+                      if child process{
+                        //worker 的主循环，接受数据，处理请求等。略复杂 单独分析 TODO
+                        //src/network/worker.c:426
+                        swWorker_loop(factory,i){}
                       }
                     }
                     serv->workers[i].pid=pid
                   }
                   //create user worker
+                  for(serv->user_worker_list, user_worker){
+                    store pipe fd
+                    swManager_spawn_user_worker(serv,user_worker->worker){
+                      pid = fork()
+
+                      if parent process{
+                        worker->pid=pid
+                        swHashMap_add_int(serv->user_worker_map,pid,worker)
+                      }
+
+                      if child process{
+                        //该接口是在php用户空间，用户主动调用addProcess时注册上的
+                        //serv->onUserWorkerStart = php_swoole_onUserWorkerStart
+                        //swoole_server.c:1181 TODO
+                        serv->onUserWorkerStart(serv, worker){
+
+                        }
+                      }
+                    }
+                  }
+
+                  swooleG.process_type=SW_PROCESS_MANAGER
+                  swooleG.pid=getpid()
+
+                  //我猜应该是用来判断php文件是否有变更用的
+                  //如果php文件有变更会重启worker，从而实现php文件的热加载
+                  //太长，该接口单独分析 TODO
+                  if serv->reload_async {
+                    swManager_loop_async(factory){
+
+                    }
+                  }else{
+                    swManager_loop_sync(factory)
                   }
                 }
               //factory start 结束
@@ -584,3 +616,4 @@ swoole_server(serv_host,serv_port,serv_mode,sock_type)
           //至此SW_SERVER_CB_onStart 结束  
          }
     }
+swoole_server::start() 分析全部结束
