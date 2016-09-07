@@ -62,9 +62,58 @@ demo:
 
 #swoole_websocket_server->push
 
-    PHP_METHOD(swoole_websocket_server, push){ 
+    PHP_METHOD(swoole_websocket_server, push){
+        //fd, zdata, opcode, fin
+        zend_parse_parameters(ZEND_NUM_ARGS, "lz|lb", &fd, &zdata, &opcode, &fin)
+
+        //opcode must smaller then 10
+
+        //get data from zdata
+        php_swoole_get_send_data(zdata, &data){
+            //zval to char
+        }
+
+        //get connection to send data, 根据fd获取connection
+        swConnect *conn = swWorker_get_connection(SwooleG.serv, fd){
+            serv->connection_list[fd]
+        }
+
+        //清空buffer
+        swString_clear(swoole_http_buffer)
+
+        //对数据进行打包encode
+        swWebSocket_encode(swoole_http_buffer, data, length, opcode, fin, 0){
+            //TODO
+        }
+
+        swServer_tcp_send(SwooleG.serv, fd, swoole_http_buffer->str, swoole_http_buffer->length){
+            factory = serv->factory
+            send.info.d = fd
+            send.info.type = SW_ENENT_TCP
+            send.data = data //data = swoole_http_buffer->str
+            factory->finish(factory, send)
+        }
     }
 
-#swoole_websocket_server->exist
+
 #swoole_websocket_server->pack
+
+    PHP_METHOD(swoole_websocket_server, pack){
+        zend_parse_parameters(ZEND_NUM_ARGS, "s|lbb", &data, &length, &opcode, &finish, &mask)
+        //clear http buffer
+        swString_clear(swoole_http_buffer)
+
+        //encode input data
+        swWebSocket_encode(swoole_http_buffer, data, length, opcode, finish, mask){
+    }
 #swoole_websocket_server->unpack
+
+    PHP_METHOD(swoole_websocket_server, unpack){
+        zend_parse_parameters(ZEND_NUM_ARGS, "s", &data)
+        php_swoole_websocket_unpack(data)
+    }
+#swoole_websocket_server->exist
+
+    PHP_METHOD(swoole_websocket_server, unpack){
+        //存在性检查，根据fd查看对应的connection 和 server_sock是否存在
+    }
