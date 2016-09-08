@@ -1,6 +1,7 @@
 #Task
 
-demo
+demo:
+
     $serv = new swoole_server("127.0.0.1", 9502);
     $serv->set(array('task_worker_num' => 4));
     $serv->on('Receive', function($serv, $fd, $from_id, $data) {
