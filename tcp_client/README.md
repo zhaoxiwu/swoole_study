@@ -66,3 +66,36 @@ demo:
         reactor->handle[fdtype] =handle;
     }
 
+#swoole_client->on
+
+    PHP_METHOD(swoole_client, on){
+        //大体逻辑跟其他几个server类似
+        zend_parse_parameters(ZEND_NUM_ARGS, "sz", &cb_name, $cb_name_len, &zcallback)
+
+        //获取clent的async type,
+        zend_read_property(swoole_client_class_entry_ptr, getThis(), "type"，0)
+
+        //给client的callback属性分配内存
+        client_callback *cb = swoole_get_property(getThis,client_property_callback)
+        cb = emalloc()
+        swoole_set_property(getThis, client_property_callback, cb)
+
+        //检查callback的可执行性，然后获取function name
+        zend_is_callable(zcallback,0,func_name)
+
+        //set connect/receive/close/error callback, adnd only support this 4 callback
+        zend_update_property(swoole_client_class_entry_ptr, getThis, "onXXX", zcallback)
+        cb->onXXX = zend_read_property(swoole_client_class_entry_ptr, getThis,"onXXX")
+    }
+
+#swoole_client->connect
+
+    PHP_METHOD(swoole_client, connect){
+        zend_parse_parameters(ZEND_NUM_ARGS, "s|ldl", &host, &host_len, &port, &timeout, &sock_flag)
+
+        swClient *cli = swoole_get_object(getThis)
+        cli = php_swoole_client_new(getThis, host, host_len, port){
+            
+        }
+    }
+
