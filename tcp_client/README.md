@@ -95,7 +95,19 @@ demo:
 
         swClient *cli = swoole_get_object(getThis)
         cli = php_swoole_client_new(getThis, host, host_len, port){
-            
+            //create socket, 系统调用
+            socket(domain, type, 0)
+
+            //cli各种成员变量设置, Connect，send sendfile, close, recv, read/write/error事件设置
+            ...
         }
+
+        zend_update_property_long(swoole_client_class_entry_ptr, object, "sock", cli->socket->fd)
     }
 
+
+#swoole_client->set
+
+    PHP_METHOD(swoole_client, set){
+
+    }
